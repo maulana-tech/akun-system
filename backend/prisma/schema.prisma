@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  name            String
+  accountType     String    @map("account_type")
+  normalBalance   String    @map("normal_balance")
+  parentId        Int?      @map("parent_id")
+  level           Int       @default(1)
+  isActive        Boolean   @default(true) @map("is_active")
+  isHeader        Boolean   @default(false) @map("is_header")
+  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(15, 2)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  
+  parent          Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children        Account[] @relation("AccountHierarchy")
+  journalDetails  JournalDetail[]
+  generalLedger   GeneralLedger[]
+  banks           Bank[]
+  cashAccounts    CashAccount[]
+  
+  @@map("accounts")
+}
+
+model AccountingPeriod {
+  id          Int       @id @default(autoincrement())
+  periodName  String    @map("period_name")
+  startDate   DateTime  @map("start_date") @db.Date
+  endDate     DateTime  @map("end_date") @db.Date
+  isClosed    Boolean   @default(false) @map("is_closed")
+  isYearEnd   Boolean   @default(false) @map("is_year_end")
+  
+  journals    JournalHeader[]
+  ledgerEntries GeneralLedger[]
+  
+  @@map("accounting_periods")
+}
+
+model JournalHeader {
+  id            Int       @id @default(autoincrement())
+  journalNo     String?   @unique @map("journal_no")
+  journalDate   DateTime  @map("journal_date") @db.Date
+  periodId      Int       @map("period_id")
+  journalType   String    @map("journal_type")
+  reference     String?
+  description   String?
+  totalDebit    Decimal   @default(0) @map("total_debit") @db.Decimal(15, 2)
+  totalCredit   Decimal   @default(0) @map("total_credit") @db.Decimal(15, 2)
+  isPosted      Boolean   @default(false) @map("is_posted")
+  createdBy     String?   @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  period        AccountingPeriod @relation(fields: [periodId], references: [id])
+  details       JournalDetail[]
+  generalLedger GeneralLedger[]
+  bankTransactions BankTransaction[]
+  cashTransactions CashTransaction[]
+  
+  @@map("journal_headers")
+}
+
+model JournalDetail {
+  id          Int       @id @default(autoincrement())
+  journalId   Int       @map("journal_id")
+  accountId   Int       @map("account_id")
+  description String?
+  debit       Decimal   @default(0) @db.Decimal(15, 2)
+  credit      Decimal   @default(0) @db.Decimal(15, 2)
+  lineNo      Int       @map("line_no")
+  
+  journal     JournalHeader @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  account     Account       @relation(fields: [accountId], references: [id])
+  
+  @@map("journal_details")
+}
+
+model GeneralLedger {
+  id              Int       @id @default(autoincrement())
+  accountId       Int       @map("account_id")
+  periodId        Int       @map("period_id")
+  journalId       Int       @map("journal_id")
+  transactionDate DateTime  @map("transaction_date") @db.Date
+  description     String?
+  debit           Decimal   @default(0) @db.Decimal(15, 2)
+  credit          Decimal   @default(0) @db.Decimal(15, 2)
+  balance         Decimal   @default(0) @db.Decimal(15, 2)
+  reference       String?
+  
+  account         Account       @relation(fields: [accountId], references: [id])
+  period          AccountingPeriod @relation(fields: [periodId], references: [id])
+  journal         JournalHeader @relation(fields: [journalId], references: [id])
+  
+  @@map("general_ledger")
+}
+
+model Bank {
+  id              Int       @id @default(autoincrement())
+  bankName        String    @map("bank_name")
+  accountNumber   String?   @map("account_number")
+  accountId       Int       @map("account_id")
+  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(15, 2)
+  currentBalance  Decimal   @default(0) @map("current_balance") @db.Decimal(15, 2)
+  
+  account         Account   @relation(fields: [accountId], references: [id])
+  transactions    BankTransaction[]
+  
+  @@map("banks")
+}
+
+model BankTransaction {
+  id              Int       @id @default(autoincrement())
+  bankId          Int       @map("bank_id")
+  transactionDate DateTime  @map("transaction_date") @db.Date
+  transactionType String    @map("transaction_type")
+  referenceNo     String?   @map("reference_no")
+  description     String?
+  amount          Decimal   @db.Decimal(15, 2)
+  journalId       Int?      @map("journal_id")
+  isReconciled    Boolean   @default(false) @map("is_reconciled")
+  
+  bank            Bank          @relation(fields: [bankId], references: [id])
+  journal         JournalHeader? @relation(fields: [journalId], references: [id])
+  
+  @@map("bank_transactions")
+}
+
+model CashAccount {
+  id              Int       @id @default(autoincrement())
+  cashName        String    @map("cash_name")
+  accountId       Int       @map("account_id")
+  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(15, 2)
+  currentBalance  Decimal   @default(0) @map("current_balance") @db.Decimal(15, 2)
+  
+  account         Account   @relation(fields: [accountId], references: [id])
+  transactions    CashTransaction[]
+  
+  @@map("cash_accounts")
+}
+
+model CashTransaction {
+  id              Int       @id @default(autoincrement())
+  cashId          Int       @map("cash_id")
+  transactionDate DateTime  @map("transaction_date") @db.Date
+  transactionType String    @map("transaction_type")
+  referenceNo     String?   @map("reference_no")
+  description     String?
+  amount          Decimal   @db.Decimal(15, 2)
+  journalId       Int?      @map("journal_id")
+  
+  cash            CashAccount   @relation(fields: [cashId], references: [id])
+  journal         JournalHeader? @relation(fields: [journalId], references: [id])
+  
+  @@map("cash_transactions")
+}
+
+model TrialBalance {
+  id              Int       @id @default(autoincrement())
+  periodId        Int       @map("period_id")
+  accountId       Int       @map("account_id")
+  openingBalance  Decimal   @map("opening_balance") @db.Decimal(15, 2)
+  debitMovement   Decimal   @map("debit_movement") @db.Decimal(15, 2)
+  creditMovement  Decimal   @map("credit_movement") @db.Decimal(15, 2)
+  endingBalance   Decimal   @map("ending_balance") @db.Decimal(15, 2)
+  
+  @@unique([periodId, accountId])
+  @@map("trial_balances")
+}

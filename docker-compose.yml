@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: akuntansi-db
+    environment:
+      POSTGRES_USER: akuntansi
+      POSTGRES_PASSWORD: akuntansi123
+      POSTGRES_DB: akuntansi_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: akuntansi-api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://akuntansi:akuntansi123@db:5432/akuntansi_db?schema=public"
+      JWT_SECRET: "simple-secret-key-2026"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend:
+    build: ./frontend
+    container_name: akuntansi-web
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "http://localhost:3000/api"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
