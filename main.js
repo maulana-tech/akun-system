@@ -1,6 +1,5 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, utilityProcess } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
 
 let mainWindow;
 let backendProcess;
@@ -37,26 +36,31 @@ function startBackend() {
   let backendDir = path.join(__dirname, 'backend');
   
   if (!isDev) {
-    // When packaged, asar replaces the path with app.asar
-    // We need to point to the unpacked version
+    // When packaged, point to the unpacked version
     backendDir = backendDir.replace('app.asar', 'app.asar.unpacked');
-
-    backendProcess = spawn('node', ['src/app.js'], {
-      cwd: backendDir,
-      env: { 
-        ...process.env, 
-        DATABASE_URL: `file:${path.join(app.getPath('userData'), 'database.db')}` 
-      }
-    });
-
-    backendProcess.stdout.on('data', (data) => {
-      console.log(`Backend: ${data}`);
-    });
-
-    backendProcess.stderr.on('data', (data) => {
-      console.error(`Backend Error: ${data}`);
-    });
   }
+
+  const scriptPath = path.join(backendDir, 'src/app.js');
+  const dbPath = path.join(app.getPath('userData'), 'database.db');
+
+  console.log(`Starting backend from: ${scriptPath}`);
+
+  backendProcess = utilityProcess.fork(scriptPath, [], {
+    cwd: backendDir,
+    env: { 
+      ...process.env, 
+      DATABASE_URL: `file:${dbPath}`,
+      PORT: '3000'
+    }
+  });
+
+  backendProcess.on('spawn', () => {
+    console.log('Backend process spawned successfully');
+  });
+
+  backendProcess.on('exit', (code) => {
+    console.log(`Backend process exited with code: ${code}`);
+  });
 }
 
 app.on('ready', () => {
