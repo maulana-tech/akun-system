@@ -2,7 +2,18 @@
 
 ---
 
-## 6. Trigger & Stored Procedures (PostgreSQL)
+## 6. Hybrid Desktop Architecture (Electron + SQLite)
+
+Untuk klien yang menginginkan penggunaan **Offline** tanpa internet, sistem ini dikonversi menjadi aplikasi desktop dengan spesifikasi:
+
+- **Runtime**: Electron.js
+- **Database**: SQLite (Local file `database.db` di folder User Data)
+- **Posting Logic**: Semua logika Trigger PostgreSQL dipindahkan ke **Node.js (Prisma Transaction)** untuk portabilitas.
+- **Sidecar**: Electron menjalankan proses Backend (Node.js) secara otomatis di background.
+
+---
+
+## 7. Trigger & Stored Procedures (PostgreSQL)
 
 ```sql
 -- ============================================
