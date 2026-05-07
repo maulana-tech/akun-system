@@ -23,6 +23,13 @@ class ApiService {
     return this.request('/accounts');
   }
   
+  updateAccount(id, data) {
+    return this.request(`/accounts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+  
   // Journals
   createJournal(data) {
     return this.request('/journals', {
@@ -61,6 +68,21 @@ class ApiService {
   getLedger(accountId, params = {}) {
     const query = new URLSearchParams(params).toString();
     return this.request(`/journals/ledger/${accountId}?${query}`);
+  }
+
+  // Bank & Cash Transactions
+  createBankTransaction(data) {
+    return this.request('/banks/transaction', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  createCashTransaction(data) {
+    return this.request('/cash/transaction', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
   }
 }
 
