@@ -1,16 +1,21 @@
 {
   "name": "akun-system-desktop",
   "version": "1.0.0",
-  "description": "Professional Accounting System Desktop",
+  "author": "Maulana Tech <contact@maulana.tech>",
+  "homepage": "https://siakunt.app",
+  "description": "SIAKUNT - Sistem Informasi Akuntansi Terintegrasi",
   "main": "main.js",
   "scripts": {
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\" \"npm run start:electron\"",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm run dev",
     "start:electron": "wait-on http://localhost:5173 && electron .",
-    "build": "npm run build:frontend && npm run build:electron",
+    "build": "npm run build:frontend && npm run build:all",
     "build:frontend": "cd frontend && npm run build",
-    "build:electron": "electron-builder"
+    "build:electron": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder -wm"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
@@ -27,14 +32,18 @@
     "files": [
       "main.js",
       "backend/**/*",
-      "frontend/dist/**/*"
+      "frontend/dist/**/*",
+      "package.json"
     ],
     "asar": true,
+    "icon": "build/icon.png",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.png"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "build/icon.png"
     }
   }
 }
