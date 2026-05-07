@@ -36,6 +36,9 @@
       "package.json"
     ],
     "asar": true,
+    "asarUnpack": [
+      "backend/**/*"
+    ],
     "icon": "build/icon.png",
     "win": {
       "target": "nsis",
