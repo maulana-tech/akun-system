@@ -2,6 +2,77 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 class JournalController {
+  // Helper to generate Journal No
+  async generateJournalNo(date, type) {
+    const year = new Date(date).getFullYear();
+    const prefix = `JU-${year}-`;
+    
+    const lastJournal = await prisma.journalHeader.findFirst({
+      where: {
+        journalNo: { startsWith: prefix }
+      },
+      orderBy: { journalNo: 'desc' }
+    });
+
+    let seq = 1;
+    if (lastJournal && lastJournal.journalNo) {
+      const lastSeq = parseInt(lastJournal.journalNo.split('-')[2]);
+      seq = lastSeq + 1;
+    }
+
+    return `${prefix}${String(seq).padStart(4, '0')}`;
+  }
+
+  // Helper to post a single journal to ledger
+  async postJournalInternal(journalId, tx) {
+    const journal = await tx.journalHeader.findUnique({
+      where: { id: journalId },
+      include: { details: { include: { account: true } } }
+    });
+
+    if (!journal || journal.isPosted) return;
+
+    for (const detail of journal.details) {
+      const acc = detail.account;
+      
+      // Get latest balance from ledger or account opening
+      const lastLedger = await tx.generalLedger.findFirst({
+        where: { accountId: detail.accountId },
+        orderBy: { id: 'desc' }
+      });
+
+      let runningBalance = lastLedger ? parseFloat(lastLedger.balance) : parseFloat(acc.openingBalance);
+
+      // Update balance based on normal balance
+      if (acc.normalBalance === 'DEBIT') {
+        runningBalance += (parseFloat(detail.debit) - parseFloat(detail.credit));
+      } else {
+        runningBalance += (parseFloat(detail.credit) - parseFloat(detail.debit));
+      }
+
+      // Insert to Ledger
+      await tx.generalLedger.create({
+        data: {
+          accountId: detail.accountId,
+          periodId: journal.periodId,
+          journalId: journal.id,
+          transactionDate: journal.journalDate,
+          description: detail.description || journal.description,
+          debit: detail.debit,
+          credit: detail.credit,
+          balance: runningBalance,
+          reference: journal.journalNo
+        }
+      });
+    }
+
+    // Mark as posted
+    await tx.journalHeader.update({
+      where: { id: journalId },
+      data: { isPosted: true }
+    });
+  }
+
   // Create Journal Entry
   async create(req, res) {
     try {
@@ -18,39 +89,45 @@ class JournalController {
           credit: totalCredit 
         });
       }
-      
-      const journal = await prisma.journalHeader.create({
-        data: {
-          journalDate: new Date(journalDate),
-          periodId: parseInt(periodId),
-          journalType,
-          reference,
-          description,
-          totalDebit,
-          totalCredit,
-          details: {
-            create: details.map((d, index) => ({
-              accountId: parseInt(d.accountId),
-              description: d.description,
-              debit: parseFloat(d.debit) || 0,
-              credit: parseFloat(d.credit) || 0,
-              lineNo: index + 1
-            }))
-          }
-        },
-        include: { details: { include: { account: true } } }
-      });
 
-      // Immediately update to isPosted: true to trigger database posting logic
-      // This ensures automatic posting as requested by the user
-      const postedJournal = await prisma.journalHeader.update({
-        where: { id: journal.id },
-        data: { isPosted: true },
-        include: { details: { include: { account: true } } }
+      const result = await prisma.$transaction(async (tx) => {
+        const journalNo = await this.generateJournalNo(journalDate, journalType);
+        
+        const journal = await tx.journalHeader.create({
+          data: {
+            journalNo,
+            journalDate: new Date(journalDate),
+            periodId: parseInt(periodId),
+            journalType,
+            reference,
+            description,
+            totalDebit,
+            totalCredit,
+            details: {
+              create: details.map((d, index) => ({
+                accountId: parseInt(d.accountId),
+                description: d.description,
+                debit: parseFloat(d.debit) || 0,
+                credit: parseFloat(d.credit) || 0,
+                lineNo: index + 1
+              }))
+            }
+          },
+          include: { details: { include: { account: true } } }
+        });
+
+        // Auto-post
+        await this.postJournalInternal(journal.id, tx);
+        
+        return tx.journalHeader.findUnique({
+          where: { id: journal.id },
+          include: { details: { include: { account: true } } }
+        });
       });
       
-      res.status(201).json(postedJournal);
+      res.status(201).json(result);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -60,28 +137,22 @@ class JournalController {
     try {
       const { id } = req.params;
       
-      // Check if already posted
-      const existing = await prisma.journalHeader.findUnique({
-        where: { id: parseInt(id) }
+      const result = await prisma.$transaction(async (tx) => {
+        const existing = await tx.journalHeader.findUnique({
+          where: { id: parseInt(id) }
+        });
+        
+        if (!existing) throw new Error('Jurnal tidak ditemukan');
+        if (existing.isPosted) throw new Error('Jurnal sudah diposting!');
+        
+        await this.postJournalInternal(parseInt(id), tx);
+        
+        return tx.journalHeader.findUnique({
+          where: { id: parseInt(id) }
+        });
       });
       
-      if (!existing) {
-        return res.status(404).json({ error: 'Jurnal tidak ditemukan' });
-      }
-
-      if (existing.isPosted) {
-        return res.status(400).json({ error: 'Jurnal sudah diposting!' });
-      }
-      
-      // Note: Posting is handled automatically by the database trigger trg_post_ledger
-      // when is_posted is updated from FALSE to TRUE.
-      
-      const updated = await prisma.journalHeader.update({
-        where: { id: parseInt(id) },
-        data: { isPosted: true }
-      });
-      
-      res.json({ message: 'Jurnal berhasil diposting!', journal: updated });
+      res.json({ message: 'Jurnal berhasil diposting!', journal: result });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
