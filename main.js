@@ -34,13 +34,19 @@ function createWindow() {
 
 function startBackend() {
   const isDev = !app.isPackaged;
-  const backendDir = path.join(__dirname, 'backend');
+  let backendDir = path.join(__dirname, 'backend');
   
   if (!isDev) {
-    // In production, we assume the backend is packaged or we run the node script
+    // When packaged, asar replaces the path with app.asar
+    // We need to point to the unpacked version
+    backendDir = backendDir.replace('app.asar', 'app.asar.unpacked');
+
     backendProcess = spawn('node', ['src/app.js'], {
       cwd: backendDir,
-      env: { ...process.env, DATABASE_URL: `file:${path.join(app.getPath('userData'), 'database.db')}` }
+      env: { 
+        ...process.env, 
+        DATABASE_URL: `file:${path.join(app.getPath('userData'), 'database.db')}` 
+      }
     });
 
     backendProcess.stdout.on('data', (data) => {
