@@ -21,12 +21,12 @@ async function main() {
   await prisma.account.deleteMany();
   await prisma.accountingPeriod.deleteMany();
 
-  // Reset sequences
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "accounts_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "accounting_periods_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "journal_headers_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "journal_details_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "general_ledger_id_seq" RESTART WITH 1');
+  // Reset sequences (SQLite)
+  await prisma.$executeRawUnsafe('DELETE FROM sqlite_sequence WHERE name="accounts"');
+  await prisma.$executeRawUnsafe('DELETE FROM sqlite_sequence WHERE name="accounting_periods"');
+  await prisma.$executeRawUnsafe('DELETE FROM sqlite_sequence WHERE name="journal_headers"');
+  await prisma.$executeRawUnsafe('DELETE FROM sqlite_sequence WHERE name="journal_details"');
+  await prisma.$executeRawUnsafe('DELETE FROM sqlite_sequence WHERE name="general_ledger"');
 
   const afterCount = await prisma.account.count();
   console.log(`Account count after cleanup: ${afterCount}`);
