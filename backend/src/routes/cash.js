@@ -31,8 +31,12 @@ router.get('/:id/transactions', async (req, res) => {
 // Create cash transaction + auto journal
 router.post('/transaction', async (req, res) => {
   try {
-    const { cashId, transactionDate, transactionType, description, amount } = req.body;
+    const { cashId, transactionDate, transactionType, description, amount, oppositeAccountId } = req.body;
     
+    if (!oppositeAccountId) {
+      return res.status(400).json({ error: 'Akun lawan (kategori) harus dipilih' });
+    }
+
     const cash = await prisma.cashAccount.findUnique({
       where: { id: parseInt(cashId) },
       include: { account: true }
@@ -75,7 +79,7 @@ router.post('/transaction', async (req, res) => {
               lineNo: 1
             },
             {
-              accountId: 4, // Pendapatan atau akun sumber
+              accountId: parseInt(oppositeAccountId),
               description: description || 'Sumber Dana',
               debit: 0,
               credit: amount,
@@ -83,7 +87,7 @@ router.post('/transaction', async (req, res) => {
             }
           ] : [
             {
-              accountId: 5, // Beban atau akun tujuan
+              accountId: parseInt(oppositeAccountId),
               description: description || 'Pengeluaran',
               debit: amount,
               credit: 0,
