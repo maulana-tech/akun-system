@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Account {
@@ -17,7 +17,7 @@ model Account {
   level           Int       @default(1)
   isActive        Boolean   @default(true) @map("is_active")
   isHeader        Boolean   @default(false) @map("is_header")
-  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(15, 2)
+  openingBalance  Decimal   @default(0) @map("opening_balance")
   createdAt       DateTime  @default(now()) @map("created_at")
   
   parent          Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
@@ -33,8 +33,8 @@ model Account {
 model AccountingPeriod {
   id          Int       @id @default(autoincrement())
   periodName  String    @map("period_name")
-  startDate   DateTime  @map("start_date") @db.Date
-  endDate     DateTime  @map("end_date") @db.Date
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime  @map("end_date")
   isClosed    Boolean   @default(false) @map("is_closed")
   isYearEnd   Boolean   @default(false) @map("is_year_end")
   
@@ -47,13 +47,13 @@ model AccountingPeriod {
 model JournalHeader {
   id            Int       @id @default(autoincrement())
   journalNo     String?   @unique @map("journal_no")
-  journalDate   DateTime  @map("journal_date") @db.Date
+  journalDate   DateTime  @map("journal_date")
   periodId      Int       @map("period_id")
   journalType   String    @map("journal_type")
   reference     String?
   description   String?
-  totalDebit    Decimal   @default(0) @map("total_debit") @db.Decimal(15, 2)
-  totalCredit   Decimal   @default(0) @map("total_credit") @db.Decimal(15, 2)
+  totalDebit    Decimal   @default(0) @map("total_debit")
+  totalCredit   Decimal   @default(0) @map("total_credit")
   isPosted      Boolean   @default(false) @map("is_posted")
   createdBy     String?   @map("created_by")
   createdAt     DateTime  @default(now()) @map("created_at")
@@ -72,8 +72,8 @@ model JournalDetail {
   journalId   Int       @map("journal_id")
   accountId   Int       @map("account_id")
   description String?
-  debit       Decimal   @default(0) @db.Decimal(15, 2)
-  credit      Decimal   @default(0) @db.Decimal(15, 2)
+  debit       Decimal   @default(0)
+  credit      Decimal   @default(0)
   lineNo      Int       @map("line_no")
   
   journal     JournalHeader @relation(fields: [journalId], references: [id], onDelete: Cascade)
@@ -87,11 +87,11 @@ model GeneralLedger {
   accountId       Int       @map("account_id")
   periodId        Int       @map("period_id")
   journalId       Int       @map("journal_id")
-  transactionDate DateTime  @map("transaction_date") @db.Date
+  transactionDate DateTime  @map("transaction_date")
   description     String?
-  debit           Decimal   @default(0) @db.Decimal(15, 2)
-  credit          Decimal   @default(0) @db.Decimal(15, 2)
-  balance         Decimal   @default(0) @db.Decimal(15, 2)
+  debit           Decimal   @default(0)
+  credit          Decimal   @default(0)
+  balance         Decimal   @default(0)
   reference       String?
   
   account         Account       @relation(fields: [accountId], references: [id])
@@ -106,8 +106,8 @@ model Bank {
   bankName        String    @map("bank_name")
   accountNumber   String?   @map("account_number")
   accountId       Int       @map("account_id")
-  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(15, 2)
-  currentBalance  Decimal   @default(0) @map("current_balance") @db.Decimal(15, 2)
+  openingBalance  Decimal   @default(0) @map("opening_balance")
+  currentBalance  Decimal   @default(0) @map("current_balance")
   
   account         Account   @relation(fields: [accountId], references: [id])
   transactions    BankTransaction[]
@@ -118,11 +118,11 @@ model Bank {
 model BankTransaction {
   id              Int       @id @default(autoincrement())
   bankId          Int       @map("bank_id")
-  transactionDate DateTime  @map("transaction_date") @db.Date
+  transactionDate DateTime  @map("transaction_date")
   transactionType String    @map("transaction_type")
   referenceNo     String?   @map("reference_no")
   description     String?
-  amount          Decimal   @db.Decimal(15, 2)
+  amount          Decimal
   journalId       Int?      @map("journal_id")
   isReconciled    Boolean   @default(false) @map("is_reconciled")
   
@@ -136,8 +136,8 @@ model CashAccount {
   id              Int       @id @default(autoincrement())
   cashName        String    @map("cash_name")
   accountId       Int       @map("account_id")
-  openingBalance  Decimal   @default(0) @map("opening_balance") @db.Decimal(15, 2)
-  currentBalance  Decimal   @default(0) @map("current_balance") @db.Decimal(15, 2)
+  openingBalance  Decimal   @default(0) @map("opening_balance")
+  currentBalance  Decimal   @default(0) @map("current_balance")
   
   account         Account   @relation(fields: [accountId], references: [id])
   transactions    CashTransaction[]
@@ -148,11 +148,11 @@ model CashAccount {
 model CashTransaction {
   id              Int       @id @default(autoincrement())
   cashId          Int       @map("cash_id")
-  transactionDate DateTime  @map("transaction_date") @db.Date
+  transactionDate DateTime  @map("transaction_date")
   transactionType String    @map("transaction_type")
   referenceNo     String?   @map("reference_no")
   description     String?
-  amount          Decimal   @db.Decimal(15, 2)
+  amount          Decimal
   journalId       Int?      @map("journal_id")
   
   cash            CashAccount   @relation(fields: [cashId], references: [id])
@@ -165,10 +165,10 @@ model TrialBalance {
   id              Int       @id @default(autoincrement())
   periodId        Int       @map("period_id")
   accountId       Int       @map("account_id")
-  openingBalance  Decimal   @map("opening_balance") @db.Decimal(15, 2)
-  debitMovement   Decimal   @map("debit_movement") @db.Decimal(15, 2)
-  creditMovement  Decimal   @map("credit_movement") @db.Decimal(15, 2)
-  endingBalance   Decimal   @map("ending_balance") @db.Decimal(15, 2)
+  openingBalance  Decimal   @map("opening_balance")
+  debitMovement   Decimal   @map("debit_movement")
+  creditMovement  Decimal   @map("credit_movement")
+  endingBalance   Decimal   @map("ending_balance")
   
   @@unique([periodId, accountId])
   @@map("trial_balances")
