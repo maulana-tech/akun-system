@@ -7,16 +7,20 @@ import {
   BarChart3, 
   Landmark, 
   Wallet,
-  Settings
+  Settings,
+  Database,
+  PlusSquare
 } from 'lucide-react';
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/jurnal', icon: BookOpen, label: 'Jurnal Umum' },
+  { path: '/input', icon: PlusSquare, label: 'Input Transaksi' },
+  { path: '/riwayat', icon: BookOpen, label: 'Riwayat Jurnal' },
   { path: '/ledger', icon: FileText, label: 'Buku Besar' },
   { path: '/bank', icon: Landmark, label: 'Buku Bank' },
   { path: '/kas', icon: Wallet, label: 'Buku Kas' },
   { path: '/laporan', icon: BarChart3, label: 'Laporan' },
+  { path: '/akun', icon: Database, label: 'Daftar Akun' },
   { path: '/pengaturan', icon: Settings, label: 'Pengaturan' },
 ];
 
