@@ -5,12 +5,14 @@ import Header from './components/Layout/Header';
 
 // Pages
 import Dashboard from './pages/Dashboard';
-import JournalPage from './pages/JournalPage';
+import TransactionCenter from './pages/TransactionCenter';
 import LedgerPage from './pages/LedgerPage';
 import ReportsPage from './pages/ReportsPage';
 import BankPage from './pages/BankPage';
 import CashPage from './pages/CashPage';
 import SettingsPage from './pages/SettingsPage';
+import AccountsPage from './pages/AccountsPage';
+import JournalHistoryPage from './pages/JournalHistoryPage';
 
 function App() {
   const location = useLocation();
@@ -19,12 +21,14 @@ function App() {
   const getTitle = () => {
     switch (location.pathname) {
       case '/': return 'Dashboard';
-      case '/jurnal': return 'Jurnal Umum';
+      case '/input': return 'Input Transaksi';
       case '/ledger': return 'Buku Besar';
       case '/bank': return 'Buku Bank';
       case '/kas': return 'Buku Kas';
       case '/laporan': return 'Laporan Keuangan';
       case '/pengaturan': return 'Pengaturan';
+      case '/akun': return 'Daftar Akun';
+      case '/riwayat': return 'Riwayat Jurnal';
       default: return 'Sistem Akuntansi';
     }
   };
@@ -39,12 +43,14 @@ function App() {
         <main className="flex-1 p-6 overflow-y-auto">
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/jurnal" element={<JournalPage />} />
+            <Route path="/input" element={<TransactionCenter />} />
             <Route path="/ledger" element={<LedgerPage />} />
             <Route path="/bank" element={<BankPage />} />
             <Route path="/kas" element={<CashPage />} />
             <Route path="/laporan" element={<ReportsPage />} />
             <Route path="/pengaturan" element={<SettingsPage />} />
+            <Route path="/akun" element={<AccountsPage />} />
+            <Route path="/riwayat" element={<JournalHistoryPage />} />
           </Routes>
         </main>
         
