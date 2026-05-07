@@ -59,14 +59,15 @@ router.post('/', async (req, res) => {
 // Update account
 router.put('/:id', async (req, res) => {
   try {
-    const { name, isActive, openingBalance } = req.body;
+    const { code, name, isActive, openingBalance } = req.body;
     
     const account = await prisma.account.update({
       where: { id: parseInt(req.params.id) },
       data: {
+        code,
         name,
         isActive,
-        openingBalance
+        openingBalance: openingBalance !== undefined ? parseFloat(openingBalance) : undefined
       }
     });
     
