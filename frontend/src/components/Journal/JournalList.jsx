@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../services/api';
+import JournalDetailModal from './JournalDetailModal';
 
 const JournalList = () => {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [viewJournal, setViewJournal] = useState(null);
 
   useEffect(() => {
     loadJournals();
@@ -107,7 +109,10 @@ const JournalList = () => {
                 </td>
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center gap-2">
-                    <button className="text-blue-600 hover:text-blue-800">
+                    <button 
+                      onClick={() => setViewJournal(journal)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
                       <Eye className="w-4 h-4" />
                     </button>
                     {!journal.isPosted && (
@@ -149,6 +154,14 @@ const JournalList = () => {
           </button>
         </div>
       </div>
+
+      {/* Modal View */}
+      {viewJournal && (
+        <JournalDetailModal 
+          journal={viewJournal} 
+          onClose={() => setViewJournal(null)} 
+        />
+      )}
     </div>
   );
 };
