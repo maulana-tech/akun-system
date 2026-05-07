@@ -40,8 +40,16 @@ class JournalController {
         },
         include: { details: { include: { account: true } } }
       });
+
+      // Immediately update to isPosted: true to trigger database posting logic
+      // This ensures automatic posting as requested by the user
+      const postedJournal = await prisma.journalHeader.update({
+        where: { id: journal.id },
+        data: { isPosted: true },
+        include: { details: { include: { account: true } } }
+      });
       
-      res.status(201).json(journal);
+      res.status(201).json(postedJournal);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
