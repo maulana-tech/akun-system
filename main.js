@@ -1,5 +1,6 @@
 const { app, BrowserWindow, utilityProcess } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 let backendProcess;
@@ -42,6 +43,22 @@ function startBackend() {
 
   const scriptPath = path.join(backendDir, 'src/app.js');
   const dbPath = path.join(app.getPath('userData'), 'database.db');
+  const templateDbPath = path.join(backendDir, 'template.sqlite');
+
+  // Ensure database exists
+  if (!fs.existsSync(dbPath)) {
+    console.log('Database not found, copying template...');
+    try {
+      if (fs.existsSync(templateDbPath)) {
+        fs.copyFileSync(templateDbPath, dbPath);
+        console.log('Template database copied successfully');
+      } else {
+        console.error('Template database not found at:', templateDbPath);
+      }
+    } catch (err) {
+      console.error('Failed to copy template database:', err);
+    }
+  }
 
   console.log(`Starting backend from: ${scriptPath}`);
 
