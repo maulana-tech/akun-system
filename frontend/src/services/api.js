@@ -55,10 +55,6 @@ class ApiService {
   getIncomeStatement(startDate, endDate) {
     return this.request(`/reports/income-statement?startDate=${startDate}&endDate=${endDate}`);
   }
-  
-  getIncomeStatement(startDate, endDate) {
-    return this.request(`/reports/income-statement?startDate=${startDate}&endDate=${endDate}`);
-  }
 
   getBalanceSheet(asOfDate) {
     return this.request(`/reports/balance-sheet?asOfDate=${asOfDate}`);
