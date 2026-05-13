@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { BookOpen, Landmark, Wallet, History, AlertCircle } from 'lucide-react';
 import JournalForm from '../components/Journal/JournalForm';
 import JournalList from '../components/Journal/JournalList';
 import api from '../services/api';
 
 const TransactionCenter = () => {
-  const [activeTab, setActiveTab] = useState('journal');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.tab || 'journal');
   const [refreshKey, setRefreshKey] = useState(0);
   const [accounts, setAccounts] = useState([]);
   const [banks, setBanks] = useState([]);
